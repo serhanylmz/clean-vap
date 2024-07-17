@@ -24,7 +24,7 @@ def get_args():
         "-a",
         "--audio",
         type=str,
-        default="/home/erik/projects/data/Fisher/fisher_eng_tr_sp_d1/audio/000/fe_03_00001.wav",  # original: None
+        default="/home/erik/projects/data/Fisher/fisher_eng_tr_sp_d1/audio/002/fe_03_00208.wav",  # original: None
         help="Path to waveform",
         # required=True,
     )

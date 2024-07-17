@@ -1,0 +1,9 @@
+## CSV Files
+
+train_path: /home/erik/projects/CCConv/VoiceActivityProjection/data/splits/fis_swb/train_sliding.csv
+val_path: /home/erik/projects/CCConv/VoiceActivityProjection/data/splits/fis_swb/val_sliding.csv
+test_path: /home/erik/projects/CCConv/VoiceActivityProjection/data/splits/fis_swb/test_sliding.csv
+
+## Normal Audio Files: 
+
+audio_path: /home/erik/projects/data/Fisher/fisher_eng_tr_sp_d1/audio/002/fe_03_00208.wav

@@ -1,0 +1,1 @@
+python test.py -a "/home/erik/projects/data/Fisher/fisher_eng_tr_sp_d1/audio/002/fe_03_00208.wav" -c "/home/serhan/Desktop/VoiceActivityProjection/serhan-utils/checkpoints/audio_1/epoch=1-step=21761.ckpt" --plot

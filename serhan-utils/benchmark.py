@@ -3,26 +3,34 @@ import torch
 import numpy as np
 from pathlib import Path
 from argparse import ArgumentParser
-from vap.modules.VAP import step_extraction
+from vap.modules.VAP import load_model_from_state_dict, step_extraction
 from vap.modules.lightning_module import VAPModule
 from vap.utils.audio import load_waveform
-from vap.utils.utils import everything_deterministic
+from vap.utils.utils import batch_to_device, everything_deterministic, tensor_dict_to_json
 
 everything_deterministic()
 torch.manual_seed(0)
+
+##
+## Essentially the same as test.py, but imitates saving output to align better with a real-world scenario. 
+##
 
 def benchmark_inference(model, waveform, chunk_time=20, step_time=5, num_runs=5):
     device = next(model.parameters()).device
     waveform = waveform.to(device)
     
-    # Warm-up run
-    _ = step_extraction(waveform, model, chunk_time=chunk_time, step_time=step_time)
-    
-    # Benchmark runs
     durations = []
     for _ in range(num_runs):
         start_time = time.time()
-        _ = step_extraction(waveform, model, chunk_time=chunk_time, step_time=step_time)
+        
+        if waveform.shape[-1] / model.sample_rate > 20:
+            out = step_extraction(waveform, model, chunk_time=chunk_time, step_time=step_time)
+        else:
+            out = model.probs(waveform)
+        
+        out = batch_to_device(out, "cpu")
+        _ = tensor_dict_to_json(out)  # Simulate saving output
+        
         end_time = time.time()
         durations.append(end_time - start_time)
     
@@ -37,7 +45,7 @@ def run_benchmark():
     parser.add_argument("--checkpoint", type=str, required=True, help="Path to trained model")
     parser.add_argument("--chunk_time", type=float, default=20, help="Duration of each chunk processed by model")
     parser.add_argument("--step_time", type=float, default=5, help="Increment to process in a step")
-    parser.add_argument("--num_runs", type=int, default=5, help="Number of benchmark runs")
+    parser.add_argument("--num_runs", type=int, default=1, help="Number of benchmark runs")
     args = parser.parse_args()
 
     assert Path(args.audio).exists(), f"Audio {args.audio} does not exist"

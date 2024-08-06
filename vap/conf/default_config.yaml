@@ -85,13 +85,13 @@ trainer:
   gradient_clip_val: 5.0
   logger:
     _target_: lightning.pytorch.loggers.wandb.WandbLogger
-    save_dir: runs_new
-    project: VAP2
-    name: VAP2
+    save_dir: runs_mixed
+    project: VAP-Mixed-Audio
+    name: VAP-Mixed-Audio-Train
     log_model: false
   callbacks:
   - _target_: lightning.pytorch.callbacks.ModelCheckpoint
-    # dirpath: /tmp/checkpoints
+    dirpath: /home/serhan/Desktop/VoiceActivityProjection/serhan-utils/checkpoints/audio_mixed
     monitor: val_loss
     mode: min
     save_top_k: 1

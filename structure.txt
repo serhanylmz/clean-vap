@@ -1,0 +1,89 @@
+.
+├── assets
+│   └── checkpoints
+│       └── cpc
+│           └── 60k_epoch4-d0f474de.pt
+├── checkpoints
+│   ├── erik_checkpoints
+│   │   ├── checkpoint.ckpt
+│   │   ├── VAPModule_state_dict.pt
+│   │   └── VAP_state_dict.pt
+│   └── README.md
+├── LICENSE
+├── notebooks
+│   ├── model_output.ipynb
+│   ├── README.md
+│   └── visualize_samples.ipynb
+├── README.md
+├── req.txt
+├── run.py
+├── serhan-utils
+│   ├── audio_mixer_gpu.py
+│   ├── audio_mixer.py
+│   ├── benchmark.py
+│   ├── call_test.sh
+│   ├── checkpoints
+│   │   ├── audio_1
+│   │   │   ├── epoch=0-step=10880.ckpt
+│   │   │   ├── epoch=1-step=21761.ckpt
+│   │   │   ├── vap_output-0.png
+│   │   │   └── vap_output-1.png
+│   │   └── sink_1
+│   │       └── checkpoint.ckpt
+│   ├── data_paths.txt
+│   ├── mixed_audio_gpu.wav
+│   ├── mixed_audio.wav
+│   ├── see_job.txt
+│   ├── stream.py
+│   └── test.py
+├── setup.py
+├── structure.txt
+├── todo.md
+├── vap
+│   ├── callbacks
+│   │   ├── flip_channels.py
+│   │   ├── __init__.py
+│   │   └── vad_mask.py
+│   ├── conf
+│   │   └── default_config.yaml
+│   ├── data
+│   │   ├── datamodule_old.py
+│   │   ├── datamodule.py
+│   │   ├── dset_event.py
+│   │   └── README.md
+│   ├── eval_events.py
+│   ├── eval.py
+│   ├── events
+│   │   ├── events.py
+│   │   ├── __init__.py
+│   │   ├── new_events.py
+│   │   ├── README.md
+│   │   └── streamlit_events.py
+│   ├── __init__.py
+│   ├── main.py
+│   ├── metrics.py
+│   ├── modules
+│   │   ├── encoder_components.py
+│   │   ├── encoder.py
+│   │   ├── __init__.py
+│   │   ├── lightning_module.py
+│   │   ├── modules.py
+│   │   └── VAP.py
+│   ├── objective.py
+│   └── utils
+│       ├── audio.py
+│       ├── colors.py
+│       ├── __init__.py
+│       ├── plot.py
+│       ├── __pycache__
+│       │   ├── audio.cpython-310.pyc
+│       │   ├── __init__.cpython-310.pyc
+│       │   ├── plot.cpython-310.pyc
+│       │   └── utils.cpython-310.pyc
+│       └── utils.py
+├── vap.egg-info
+│   ├── dependency_links.txt
+│   ├── PKG-INFO
+│   ├── SOURCES.txt
+│   └── top_level.txt
+└── VapStereo.png

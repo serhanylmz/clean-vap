@@ -9,36 +9,92 @@ import json
 from typing import Optional, Mapping, Any
 import matplotlib.pyplot as plt
 
-import numpy as np # NEW!
-from numba import njit, prange # NEW!
 
 from vap.utils.audio import load_waveform, mono_to_stereo
 from vap.utils.utils import vad_list_to_onehot
 from vap.utils.plot import plot_melspectrogram, plot_vad
-
+import random
 
 SAMPLE = Mapping[str, Tensor]
 
-def stereo_mixer_with_delay(audio, sample_rate=16000):
+def stereo_mixer_with_delay(audio, sample_rate=16000, mix_probability=0.3, max_scale=0.2, max_delay_ms=100, separation_probability=0, min_chunk_duration=0.1, max_chunk_duration=5):
+    """
+    Mix stereo audio channels with optional delay and channel separation.
+
+    Parameters:
+    - audio (torch.Tensor): Input audio tensor of shape (2, seq_length)
+    - sample_rate (int): Audio sample rate in Hz (default: 16000)
+    - mix_probability (float): Probability of applying mixing (default: 0.5)
+    - max_scale (float): Maximum scale factor for mixing (default: 0.5)
+    - max_delay_ms (int): Maximum delay in milliseconds (default: 300)
+    - separation_probability (float): Probability of applying channel separation (default: 0.1)
+    - min_chunk_duration (int): Minimum duration of each chunk in seconds for separation (default: 5)
+    - max_chunk_duration (int): Maximum duration of each chunk in seconds for separation (default: 10)
+
+    Returns:
+    - torch.Tensor: Mixed or separated audio tensor of shape (2, seq_length)
+    """
     channels, seq_length = audio.shape
-    max_delay_samples = int(0.3 * sample_rate)  # 300ms
+
+    # Decide whether to apply channel separation
+    if torch.rand(1).item() < separation_probability:
+        # Apply channel separation
+        processed_chunks = []
+        current_position = 0
+
+        while current_position < seq_length:
+            # Determine random chunk duration
+            chunk_duration = random.uniform(min_chunk_duration, max_chunk_duration)
+            chunk_size = int(chunk_duration * sample_rate)
+
+            # Ensure we don't go beyond the audio length
+            end_position = min(current_position + chunk_size, seq_length)
+            
+            chunk = audio[:, current_position:end_position]
+            
+            # Calculate energy for each channel in the chunk
+            energy_left = torch.sum(chunk[0] ** 2)
+            energy_right = torch.sum(chunk[1] ** 2)
+            
+            # Create a new chunk with the dominant channel
+            new_chunk = torch.zeros_like(chunk)
+            if energy_left >= energy_right:
+                new_chunk[0] = chunk[0]
+            else:
+                new_chunk[1] = chunk[1]
+            
+            processed_chunks.append(new_chunk)
+            current_position = end_position
+
+        # Concatenate all processed chunks
+        return torch.cat(processed_chunks, dim=1)
+
+    # If not separating channels, proceed with original mixing logic
+    if torch.rand(1).item() > mix_probability:
+        return audio
     
-    # Pad the input
-    padded_left = torch.nn.functional.pad(audio[0], (max_delay_samples, max_delay_samples))
-    padded_right = torch.nn.functional.pad(audio[1], (max_delay_samples, max_delay_samples))
+    max_delay_samples = int(max_delay_ms / 1000 * sample_rate)
+    
+    # Pad the input if delay is applied
+    if max_delay_samples > 0:
+        padded_left = torch.nn.functional.pad(audio[0], (max_delay_samples, max_delay_samples))
+        padded_right = torch.nn.functional.pad(audio[1], (max_delay_samples, max_delay_samples))
+    else:
+        padded_left = audio[0]
+        padded_right = audio[1]
     
     # Generate random scaling factors and delays
-    left_to_right_scale = torch.rand(1).item() * 0.5
-    right_to_left_scale = torch.rand(1).item() * 0.5
-    left_to_right_delay = torch.randint(0, max_delay_samples, (1,)).item()
-    right_to_left_delay = torch.randint(0, max_delay_samples, (1,)).item()
+    left_to_right_scale = torch.rand(1).item() * max_scale
+    right_to_left_scale = torch.rand(1).item() * max_scale
+    left_to_right_delay = torch.randint(0, max_delay_samples + 1, (1,)).item()
+    right_to_left_delay = torch.randint(0, max_delay_samples + 1, (1,)).item()
     
     # Mix channels
-    mixed_left = padded_left[max_delay_samples:-max_delay_samples].clone()
-    mixed_right = padded_right[max_delay_samples:-max_delay_samples].clone()
+    mixed_left = padded_left[max_delay_samples:max_delay_samples + seq_length].clone() if max_delay_samples > 0 else padded_left.clone()
+    mixed_right = padded_right[max_delay_samples:max_delay_samples + seq_length].clone() if max_delay_samples > 0 else padded_right.clone()
     
-    mixed_left += right_to_left_scale * padded_right[max_delay_samples + right_to_left_delay : max_delay_samples + right_to_left_delay + seq_length]
-    mixed_right += left_to_right_scale * padded_left[max_delay_samples + left_to_right_delay : max_delay_samples + left_to_right_delay + seq_length]
+    mixed_left += right_to_left_scale * padded_right[right_to_left_delay : right_to_left_delay + seq_length]
+    mixed_right += left_to_right_scale * padded_left[left_to_right_delay : left_to_right_delay + seq_length]
     
     # Normalize to prevent clipping
     max_val = torch.max(torch.abs(torch.stack([mixed_left, mixed_right])))

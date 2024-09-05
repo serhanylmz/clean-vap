@@ -18,7 +18,7 @@ def benchmark_inference(model, waveform, chunk_time=20, step_time=19.9, num_runs
     waveform = waveform.to(device)
     
     # Warm-up run
-    _ = step_extraction(waveform, model, chunk_time=chunk_time, step_time=step_time, use_cache=use_cache)
+    _ = step_extraction(waveform, model, chunk_time=chunk_time, step_time=step_time)# , use_cache=use_cache)
     
     # Benchmark runs
     durations = []
@@ -27,7 +27,7 @@ def benchmark_inference(model, waveform, chunk_time=20, step_time=19.9, num_runs
         if hasattr(model, 'reset_cache'):
             model.reset_cache()
         start_time = time.time()
-        out = step_extraction(waveform, model, chunk_time=chunk_time, step_time=step_time, use_cache=use_cache)
+        out = step_extraction(waveform, model, chunk_time=chunk_time, step_time=step_time)# , use_cache=use_cache)
         end_time = time.time()
         durations.append(end_time - start_time)
         outputs.append(out)
@@ -37,16 +37,19 @@ def benchmark_inference(model, waveform, chunk_time=20, step_time=19.9, num_runs
     
     return avg_duration, std_duration, outputs, durations
 
-def create_plot(output, duration, run_index, use_cache, waveform):
+def create_plot(output, duration, run_index, use_cache, mix, waveform):
     fig, ax = plot_stereo(
         waveform[0].cpu(),
         p_now=output["p_now"][0].cpu(),
         p_fut=output["p_future"][0].cpu(),
         vad=output["vad"][0].cpu(),
+        plot=True,
+        figsize=(200, 30),
     )
     
     cache_status = "with_cache" if use_cache else "without_cache"
-    filename = f'run_{run_index}_{cache_status}.png'
+    mix_status = "mixed_model" if mix else "original_model"
+    filename = f'run_{run_index}_{cache_status}_{mix_status}.png'
     fig.savefig(filename)
     plt.close(fig)
     print(f"Plot for run {run_index} saved as {filename}")
@@ -63,13 +66,14 @@ def load_vap_model(args):
 
 def run_benchmark():
     parser = ArgumentParser()
-    parser.add_argument("--audio", type=str, required=True, help="Path to waveform")
+    parser.add_argument("--audio", type=str, default="/home/erik/projects/data/Fisher/fisher_eng_tr_sp_d7/audio/057/fe_03_05796.wav", help="Path to waveform")
     parser.add_argument("--checkpoint", type=str, help="Path to trained model")
     parser.add_argument("--state_dict", type=str, help="Path to state_dict")
     parser.add_argument("--chunk_time", type=float, default=20, help="Duration of each chunk processed by model")
     parser.add_argument("--step_time", type=float, default=5, help="Increment to process in a step")
     parser.add_argument("--num_runs", type=int, default=5, help="Number of benchmark runs")
     parser.add_argument("--use_cache", action="store_true", help="Use KV-cache for inference")
+    parser.add_argument("--mix", action="store_true", help="Whether or not the model is trained on mixed data.")
     parser.add_argument("--plot", action="store_true", help="Create plots for each run")
     parser.add_argument("--output", type=str, default="vap_output.json", help="Path to save output JSON")
     args = parser.parse_args()
@@ -92,6 +96,8 @@ def run_benchmark():
     duration = round(waveform.shape[-1] / model.sample_rate)
     print(f"Audio duration: {duration} seconds")
 
+    print(waveform.shape)
+
     # Run benchmark
     print("Running benchmark...")
     avg_duration, std_duration, outputs, durations = benchmark_inference(
@@ -111,7 +117,7 @@ def run_benchmark():
 
     if args.plot:
         for i, (output, duration) in enumerate(zip(outputs, durations)):
-            create_plot(output, duration, i+1, args.use_cache, waveform)
+            create_plot(output, duration, i+1, args.use_cache, args.mix, waveform)
 
 if __name__ == "__main__":
     run_benchmark()
